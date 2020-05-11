@@ -47,5 +47,23 @@ app.get("/users/:id", (req, res) => {
     .catch((err) => res.status(500).send(err));
 });
 
+app.get("/tasks", (req, res) => {
+  Task.find({})
+    .then((tasks) => res.send(tasks))
+    .catch((err) => res.status(500).send(err));
+});
+
+app.get("/tasks/:id", (req, res) => {
+  const _id = req.params.id;
+  Task.findById(_id)
+    .then((tasks) => {
+      if (!tasks) {
+        return res.status(404).send();
+      }
+      res.send(tasks);
+    })
+    .catch((err) => res.status(500).send(err));
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
