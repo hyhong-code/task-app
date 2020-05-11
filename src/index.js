@@ -26,5 +26,26 @@ app.post("/tasks", (req, res) => {
     .catch((err) => res.status(400).send(err));
 });
 
+app.get("/users", (req, res) => {
+  // pass in no query params in find method to get all users in User model
+  User.find({})
+    .then((users) => res.send(users))
+    .catch((err) => res.status(500).send(err));
+});
+
+app.get("/users/:id", (req, res) => {
+  const _id = req.params.id;
+  // findOne or findById both works
+  User.findById(_id)
+    // if mongodb can't find anything, it is considered a success, NOT error
+    .then((user) => {
+      if (!user) {
+        return res.status(404).send();
+      }
+      res.send(user); // default status code 200
+    })
+    .catch((err) => res.status(500).send(err));
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
