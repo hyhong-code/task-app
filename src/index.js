@@ -33,3 +33,19 @@ app.use(taskRouter);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
+
+const Task = require("../src/models/task");
+const User = require("./models/user");
+const main = async () => {
+  // const task = await Task.findById("5ebdbad82f17990214ced67c");
+  // // Find the user associated with this task and populate the user document to owner field
+  // // owner field now contains not only id but the whole user document
+  // await task.populate("owner").execPopulate();
+  // console.log(task.owner);
+  const user = await User.findById("5ebdba375b8d973428af4a62");
+  // Find all tasks created by this user, return as an array
+  await user.populate("tasks").execPopulate();
+  console.log(user.tasks);
+};
+
+main();

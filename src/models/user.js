@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const Task = require("../models/task");
 
 // have to create user schema first then pass into model in ordre to use middlewares
 const userSchema = new mongoose.Schema({
@@ -52,6 +53,13 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
+// mongoose virtual field, not stored in db
+userSchema.virtual("tasks", {
+  ref: "Task",
+  localField: "_id",
+  foreignField: "owner",
+});
+
 // userSchema.methods to add custom methods on the user instance
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
@@ -87,6 +95,8 @@ userSchema.statics.findByCredencials = async (email, password) => {
   return user;
 };
 
+/************************** User Middlewares **************************/
+
 // use middlewares befor saving
 // need to using binding so cannot use arrow function
 userSchema.pre("save", async function (next) {
@@ -98,6 +108,13 @@ userSchema.pre("save", async function (next) {
     user.password = await bcrypt.hash(user.password, 8);
   }
   next(); // let mongooes know middleware is done, continue to save
+});
+
+// delete all user tasks before that user is removed
+userSchema.pre("remove", async function (next) {
+  const user = this;
+  await Task.deleteMany({ owner: user._id });
+  next();
 });
 
 const User = mongoose.model("User", userSchema);
