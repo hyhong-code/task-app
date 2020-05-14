@@ -1,5 +1,6 @@
 const express = require("express");
 const User = require("../models/user");
+const auth = require("../middleware/auth");
 
 // defines a new router, router.get instead of app.get
 const router = new express.Router();
@@ -8,20 +9,30 @@ router.post("/users", async (req, res) => {
   const user = new User(req.body);
   try {
     const savedUser = await user.save();
-    res.status(201).send(savedUser);
+    const token = await user.generateAuthToken();
+    res.status(201).send({ savedUser, token });
   } catch (error) {
     res.status(400).send(error);
   }
 });
 
-router.get("/users", async (req, res) => {
+router.post("/users/login", async (req, res) => {
   try {
-    // pass in no query params to find method to get all users in User model
-    const users = await User.find({});
-    res.send(users);
+    // custom method added on User model
+    const user = await User.findByCredencials(req.body.email, req.body.password);
+    // custom method added on user instances
+    const token = await user.generateAuthToken();
+    res.send({ user, token });
   } catch (error) {
-    res.status(500).send(error);
+    res.status(400).send();
   }
+});
+
+// middleware for specific route, pass in as 2nd argument
+router.get("/users/me", auth, async (req, res) => {
+  // Only going to run if auth middleware verifes thr token and found a user
+  // sends back user's profile
+  res.send(req.user);
 });
 
 router.get("/users/:id", async (req, res) => {
@@ -49,10 +60,11 @@ router.patch("/users/:id", async (req, res) => {
     return res.status(400).send({ error: "Invalid Operations" });
   }
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    // cannot use findByIdAndUpdate because we want to use bcrypt hashing as middleware
+    const user = await User.findById(req.params.id);
+    updates.forEach((update) => (user[update] = req.body[update]));
+    await user.save();
+
     if (!user) {
       return res.status(404).send();
     }
