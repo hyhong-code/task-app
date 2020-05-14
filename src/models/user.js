@@ -62,6 +62,18 @@ userSchema.methods.generateAuthToken = async function () {
   return token;
 };
 
+// use this method to hide password and tokens in res.send
+// toJSON is called when we are trying to stringify an object
+userSchema.methods.toJSON = function () {
+  const user = this;
+
+  // Transform user intance into a raw object to manipulate
+  const userObject = user.toObject();
+  delete userObject.password;
+  delete userObject.tokens;
+  return userObject;
+};
+
 // userSchema.statics to add custom methods on the User model
 userSchema.statics.findByCredencials = async (email, password) => {
   const user = await User.findOne({ email });

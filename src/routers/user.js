@@ -28,6 +28,29 @@ router.post("/users/login", async (req, res) => {
   }
 });
 
+router.post("/users/logout", auth, async (req, res) => {
+  try {
+    req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token);
+    await req.user.save();
+    res.send();
+  } catch (error) {
+    res.status(500).send();
+  }
+});
+
+// logout of all sessions
+router.post("/users/logoutAll", auth, async (req, res) => {
+  try {
+    console.log(req.user.tokens);
+    req.user.tokens = [];
+    await req.user.save();
+    console.log(req.user.tokens);
+    res.send();
+  } catch (error) {
+    res.status(500).send();
+  }
+});
+
 // middleware for specific route, pass in as 2nd argument
 router.get("/users/me", auth, async (req, res) => {
   // Only going to run if auth middleware verifes thr token and found a user
@@ -35,23 +58,8 @@ router.get("/users/me", auth, async (req, res) => {
   res.send(req.user);
 });
 
-router.get("/users/:id", async (req, res) => {
-  const _id = req.params.id;
-  try {
-    // findOne or findById both works
-    const user = await User.findById(_id);
-    // if mongodb can't find anything, it is still considered a success, NOT errors
-    if (!user) {
-      return res.status(404).send();
-    }
-    res.send(user); // default status code 200
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
 // properties patched that does not exist on User will be ignored
-router.patch("/users/:id", async (req, res) => {
+router.patch("/users/me", auth, async (req, res) => {
   // make sure user only updates props that already exist
   const updates = Object.keys(req.body); // returns an array of keys
   const allowedUpdates = ["name", "email", "password", "age"];
@@ -61,26 +69,18 @@ router.patch("/users/:id", async (req, res) => {
   }
   try {
     // cannot use findByIdAndUpdate because we want to use bcrypt hashing as middleware
-    const user = await User.findById(req.params.id);
-    updates.forEach((update) => (user[update] = req.body[update]));
-    await user.save();
-
-    if (!user) {
-      return res.status(404).send();
-    }
-    res.send(user);
+    updates.forEach((update) => (req.user[update] = req.body[update]));
+    await req.user.save();
+    res.send(req.user);
   } catch (error) {
     res.status(400).send(error);
   }
 });
 
-router.delete("/users/:id", async (req, res) => {
+router.delete("/users/me", auth, async (req, res) => {
   try {
-    const deletedUser = await User.findOneAndDelete({ _id: req.params.id });
-    if (!deletedUser) {
-      return res.status(404).send();
-    }
-    res.send(deletedUser);
+    await req.user.remove();
+    res.send(req.user);
   } catch (error) {
     res.status(500).send(error);
   }
