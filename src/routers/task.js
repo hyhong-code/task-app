@@ -17,10 +17,39 @@ router.post("/tasks", auth, async (req, res) => {
   }
 });
 
+// GET /tasks?completed=true
+// GET /tasks?limit=10&skip=10 - give second page, 10 per page
+// GET /tasks?sortBy=createdAt:desc
 router.get("/tasks", auth, async (req, res) => {
+  const match = {};
+  const sort = {};
+
+  if (req.query.completed) {
+    match.completed = req.query.completed === "true";
+  }
+
+  if (req.query.sortBy) {
+    const parts = req.query.sortBy.split(":");
+    sort[parts[0]] = parts[1] === "asc" ? 1 : -1;
+  }
   try {
     // populate the virual field tasks for a given user
-    await req.user.populate("tasks").execPopulate();
+    await req.user
+      .populate({
+        // path - specify which field on user we are trying to populate
+        path: "tasks",
+        //  match - specify which tasks we are trying to match/filter
+        match,
+        // limit, skip, etc...
+        options: {
+          // if query params are not provided or NaN, options are ignored by mongoose
+          limit: parseInt(req.query.limit),
+          skip: parseInt(req.query.skip),
+          // sort by which field : order asc = 1, desc = -1
+          sort,
+        },
+      })
+      .execPopulate();
     res.send(req.user.tasks);
   } catch (error) {
     console.log(error);
