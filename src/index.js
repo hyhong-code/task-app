@@ -10,21 +10,6 @@ const taskRouter = require("../src/routers/task");
 
 const app = express();
 
-// // middleware, triggered between new requests and route handling
-// app.use((req, res, next) => {
-//   console.log(req.method, req.path);
-//   if (req.method === "GET") {
-//     res.send("GET requests are disabled!");
-//   } else {
-//     next(); // continue to run
-//   }
-// });
-
-// maintainence mode middleware
-// app.use((req, res, next) => {
-//   res.status(503).send("Services are down for maintainence, please try again later!");
-// });
-
 app.use(express.json());
 
 // use routers
