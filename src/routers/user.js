@@ -2,7 +2,7 @@ const express = require("express");
 const User = require("../models/user");
 const auth = require("../middleware/auth");
 const sharp = require("sharp");
-const { sendWelcomeEmail } = require("../emails/account");
+const { sendWelcomeEmail, sendGoodByeEmail } = require("../emails/account");
 
 const multer = require("multer");
 const upload = multer({
@@ -41,7 +41,10 @@ router.post("/users", async (req, res) => {
 router.post("/users/login", async (req, res) => {
   try {
     // custom method added on User model
-    const user = await User.findByCredencials(req.body.email, req.body.password);
+    const user = await User.findByCredencials(
+      req.body.email,
+      req.body.password
+    );
     // custom method added on user instances
     const token = await user.generateAuthToken();
     res.send({ user, token });
@@ -52,7 +55,9 @@ router.post("/users/login", async (req, res) => {
 
 router.post("/users/logout", auth, async (req, res) => {
   try {
-    req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token);
+    req.user.tokens = req.user.tokens.filter(
+      (token) => token.token !== req.token
+    );
     await req.user.save();
     res.send();
   } catch (error) {
@@ -85,7 +90,9 @@ router.patch("/users/me", auth, async (req, res) => {
   // make sure user only updates props that already exist
   const updates = Object.keys(req.body); // returns an array of keys
   const allowedUpdates = ["name", "email", "password", "age"];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+  const isValidOperation = updates.every((update) =>
+    allowedUpdates.includes(update)
+  );
   if (!isValidOperation) {
     return res.status(400).send({ error: "Invalid Operations" });
   }
@@ -101,6 +108,7 @@ router.patch("/users/me", auth, async (req, res) => {
 
 router.delete("/users/me", auth, async (req, res) => {
   try {
+    sendGoodByeEmail(req.user.email, req.user.name);
     await req.user.remove();
     res.send(req.user);
   } catch (error) {

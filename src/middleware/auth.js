@@ -5,11 +5,14 @@ const auth = async (req, res, next) => {
   try {
     // Access request header, Authorization key value pair
     const token = req.header("Authorization").replace("Bearer ", "");
-    const decoded = jwt.verify(token, "thisismysecret");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // We used _id when we signed the tokens for users
     // "tokens.token" finds if there is given token in a user's tokens array
-    const user = await User.findOne({ _id: decoded._id, "tokens.token": token });
+    const user = await User.findOne({
+      _id: decoded._id,
+      "tokens.token": token,
+    });
     if (!user) {
       throw new Error();
     }
